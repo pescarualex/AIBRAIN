@@ -129,6 +129,17 @@
 .bubble-user {
     -fx-background-color: #232a39;
 }
+/* tool call / tool result — muted system note, not a chat bubble */
+.tool-note {
+    -fx-text-fill: -c-faint;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 11px;
+    -fx-background-color: #101318;
+    -fx-background-radius: 6;
+    -fx-border-color: -c-border;
+    -fx-border-radius: 6;
+    -fx-padding: 5 10 5 10;
+}
 .bubble-more {
     -fx-text-fill: -c-faint;
     -fx-font-size: 11.5px;

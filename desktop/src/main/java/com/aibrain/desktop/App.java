@@ -118,9 +118,25 @@ public class App extends Application {
         int shown = Math.min(DETAIL_CAP, msgs.size());
         for (int i = 0; i < shown; i++) {
             MemoryDao.Message m = msgs.get(i);
-            boolean user = "user".equalsIgnoreCase(m.role());
+            String text = m.text() == null ? "" : m.text();
 
-            Label bubble = new Label(m.text());
+            // Tool calls and tool results are not something a person typed: the API
+            // records a tool result on a "user"-role turn, so show them as muted
+            // system notes instead of chat bubbles.
+            boolean tool = text.startsWith("[tool-result]") || text.startsWith("[tool:");
+            if (tool) {
+                Label note = new Label(text);
+                note.setWrapText(true);
+                note.getStyleClass().add("tool-note");
+                note.maxWidthProperty().bind(detailScroll.widthProperty().multiply(0.92));
+                HBox row = new HBox(note);
+                row.setAlignment(Pos.CENTER_LEFT);
+                detailBox.getChildren().add(row);
+                continue;
+            }
+
+            boolean user = "user".equalsIgnoreCase(m.role());
+            Label bubble = new Label(text);
             bubble.setWrapText(true);
             bubble.getStyleClass().addAll("bubble", user ? "bubble-user" : "bubble-assistant");
             bubble.maxWidthProperty().bind(detailScroll.widthProperty().multiply(BUBBLE_FRACTION));
