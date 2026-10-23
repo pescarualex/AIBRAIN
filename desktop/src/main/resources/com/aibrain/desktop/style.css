@@ -1,0 +1,84 @@
+/* AIBRAIN desktop — dark theme */
+
+.root {
+    -fx-background-color: #14151a;
+    -fx-font-family: "Inter", "Segoe UI", "Cantarell", sans-serif;
+}
+
+.topbar {
+    -fx-background-color: #1c1e26;
+    -fx-alignment: center-left;
+}
+
+.title {
+    -fx-text-fill: #e8c84a;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.stats {
+    -fx-text-fill: #9aa0ad;
+    -fx-font-size: 12px;
+}
+
+.text-field {
+    -fx-background-color: #2b2f3a;
+    -fx-background-radius: 6;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #777c88;
+    -fx-padding: 7 10;
+}
+
+.list-view {
+    -fx-background-color: #14151a;
+    -fx-control-inner-background: #14151a;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.list-cell {
+    -fx-text-fill: #d4d8e0;
+    -fx-background-color: #14151a;
+    -fx-padding: 9 14;
+    -fx-font-size: 13px;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: #20232c;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #2b2f3a;
+    -fx-text-fill: #ffffff;
+}
+
+.split-pane {
+    -fx-background-color: #14151a;
+    -fx-padding: 0;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: #2b2f3a;
+    -fx-padding: 0 1;
+}
+
+.text-area {
+    -fx-control-inner-background: #14151a;
+    -fx-background-color: #14151a;
+    -fx-text-fill: #d4d8e0;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", monospace;
+    -fx-font-size: 12.5px;
+}
+
+.text-area .content {
+    -fx-background-color: #14151a;
+}
+
+.scroll-bar {
+    -fx-background-color: #14151a;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #3a3f4b;
+    -fx-background-radius: 4;
+}
