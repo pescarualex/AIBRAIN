@@ -32,14 +32,14 @@
 
 .wordmark {
     -fx-text-fill: -c-accent;
-    -fx-font-size: 17px;
+    -fx-font-size: 21px;
     -fx-font-weight: bold;
     -fx-padding: 0 2 0 0;
 }
 
 .stats {
     -fx-text-fill: -c-faint;
-    -fx-font-size: 11.5px;
+    -fx-font-size: 15.5px;
 }
 
 .text-field {
@@ -49,7 +49,7 @@
     -fx-background-radius: 7;
     -fx-text-fill: -c-fg;
     -fx-prompt-text-fill: #5c6270;
-    -fx-font-size: 13px;
+    -fx-font-size: 17px;
     -fx-padding: 7 11;
 }
 .text-field:focused {
@@ -89,16 +89,16 @@
 }
 .topic-meta {
     -fx-text-fill: -c-faint;
-    -fx-font-size: 10.5px;
+    -fx-font-size: 14.5px;
 }
 .topic-title {
     -fx-text-fill: -c-fg;
-    -fx-font-size: 13.5px;
+    -fx-font-size: 17.5px;
     -fx-font-weight: bold;
 }
 .topic-sub {
     -fx-text-fill: -c-dim;
-    -fx-font-size: 12px;
+    -fx-font-size: 16px;
 }
 
 /* ---- detail pane: chat bubbles ---- */
@@ -115,7 +115,7 @@
 .bubble {
     -fx-background-radius: 13;
     -fx-padding: 9 13 9 13;
-    -fx-font-size: 12.5px;
+    -fx-font-size: 16.5px;
     -fx-line-spacing: 2px;
     -fx-text-fill: -c-fg;
 }
@@ -133,7 +133,7 @@
 .tool-note {
     -fx-text-fill: -c-faint;
     -fx-font-family: "JetBrains Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
-    -fx-font-size: 11px;
+    -fx-font-size: 15px;
     -fx-background-color: #101318;
     -fx-background-radius: 6;
     -fx-border-color: -c-border;
@@ -142,12 +142,12 @@
 }
 .bubble-more {
     -fx-text-fill: -c-faint;
-    -fx-font-size: 11.5px;
+    -fx-font-size: 15.5px;
     -fx-padding: 6 0 0 0;
 }
 .placeholder {
     -fx-text-fill: -c-faint;
-    -fx-font-size: 13px;
+    -fx-font-size: 17px;
 }
 
 /* ---- split + scrollbars ---- */
