@@ -1,6 +1,6 @@
 {
   "name": "claude-memory",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first persistent memory for Claude Code: remembers your previous sessions and brings them back into context on startup. Your data stays on your machine.",
   "author": {
     "name": "Alex"
