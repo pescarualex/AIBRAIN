@@ -1,84 +1,164 @@
-/* AIBRAIN desktop — dark theme */
+/*
+ * AIBRAIN desktop — dark theme.
+ * Layout: top bar (wordmark + stats + search) over a split of
+ * a scannable topic list and a reading detail pane.
+ * Palette: deep cool-ink neutrals + a single muted-gold accent.
+ */
 
 .root {
-    -fx-background-color: #14151a;
-    -fx-font-family: "Inter", "Segoe UI", "Cantarell", sans-serif;
+    /* color tokens (JavaFX looked-up colors) */
+    -c-bg:        #0e1014;
+    -c-topbar:    #13161c;
+    -c-hover:     #191d25;
+    -c-sel:       #202634;
+    -c-border:    #242933;
+    -c-fg:        #e7e9ef;
+    -c-dim:       #8a909f;
+    -c-faint:     #596070;
+    -c-accent:    #d2a24c;
+    -c-assistant: #74b0c4;
+
+    -fx-background-color: -c-bg;
+    -fx-font-family: "Inter", "Cantarell", "Segoe UI", "Helvetica Neue", sans-serif;
 }
 
+/* ---- top bar ---- */
 .topbar {
-    -fx-background-color: #1c1e26;
+    -fx-background-color: -c-topbar;
+    -fx-border-color: -c-border;
+    -fx-border-width: 0 0 1 0;
     -fx-alignment: center-left;
 }
 
-.title {
-    -fx-text-fill: #e8c84a;
-    -fx-font-size: 20px;
+.wordmark {
+    -fx-text-fill: -c-accent;
+    -fx-font-size: 17px;
     -fx-font-weight: bold;
+    -fx-padding: 0 2 0 0;
 }
 
 .stats {
-    -fx-text-fill: #9aa0ad;
-    -fx-font-size: 12px;
+    -fx-text-fill: -c-faint;
+    -fx-font-size: 11.5px;
 }
 
 .text-field {
-    -fx-background-color: #2b2f3a;
-    -fx-background-radius: 6;
-    -fx-text-fill: #ffffff;
-    -fx-prompt-text-fill: #777c88;
-    -fx-padding: 7 10;
+    -fx-background-color: #0c0e12;
+    -fx-border-color: -c-border;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-text-fill: -c-fg;
+    -fx-prompt-text-fill: #5c6270;
+    -fx-font-size: 13px;
+    -fx-padding: 7 11;
+}
+.text-field:focused {
+    -fx-border-color: -c-accent;
 }
 
+/* ---- lists ---- */
 .list-view {
-    -fx-background-color: #14151a;
-    -fx-control-inner-background: #14151a;
+    -fx-background-color: -c-bg;
+    -fx-control-inner-background: -c-bg;
     -fx-background-insets: 0;
+    -fx-padding: 4 0;
+}
+.list-view:focused {
+    -fx-background-insets: 0;
+}
+.list-cell {
+    -fx-background-color: -c-bg;
     -fx-padding: 0;
 }
+.list-cell:filled:hover {
+    -fx-background-color: -c-hover;
+}
+.list-cell:filled:selected {
+    -fx-background-color: -c-sel;
+}
+/* accent stripe on the selected row */
+.list-cell:filled:selected .row-box {
+    -fx-border-color: -c-accent;
+    -fx-border-width: 0 0 0 2;
+}
 
-.list-cell {
-    -fx-text-fill: #d4d8e0;
-    -fx-background-color: #14151a;
-    -fx-padding: 9 14;
+.row-box {
+    -fx-padding: 8 13 9 13;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 0 2;
+}
+.topic-meta {
+    -fx-text-fill: -c-faint;
+    -fx-font-size: 10.5px;
+}
+.topic-title {
+    -fx-text-fill: -c-fg;
+    -fx-font-size: 13.5px;
+    -fx-font-weight: bold;
+}
+.topic-sub {
+    -fx-text-fill: -c-dim;
+    -fx-font-size: 12px;
+}
+
+/* ---- detail pane ---- */
+.detail-scroll {
+    -fx-background-color: -c-bg;
+    -fx-background-insets: 0;
+}
+.detail-scroll > .viewport {
+    -fx-background-color: -c-bg;
+}
+.detail {
+    -fx-background-color: -c-bg;
+    -fx-line-spacing: 2px;
+}
+.msg-role {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: bold;
+}
+.role-user      { -fx-fill: -c-accent; }
+.role-assistant { -fx-fill: -c-assistant; }
+.msg-text {
+    -fx-fill: #c9cdd7;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+    -fx-font-size: 12.5px;
+}
+.msg-more {
+    -fx-fill: -c-faint;
+    -fx-font-size: 11.5px;
+}
+.placeholder {
+    -fx-text-fill: -c-faint;
     -fx-font-size: 13px;
 }
 
-.list-cell:filled:hover {
-    -fx-background-color: #20232c;
-}
-
-.list-cell:filled:selected {
-    -fx-background-color: #2b2f3a;
-    -fx-text-fill: #ffffff;
-}
-
+/* ---- split + scrollbars ---- */
 .split-pane {
-    -fx-background-color: #14151a;
+    -fx-background-color: -c-bg;
     -fx-padding: 0;
 }
-
-.split-pane:horizontal > .split-pane-divider {
-    -fx-background-color: #2b2f3a;
-    -fx-padding: 0 1;
+.split-pane > .split-pane-divider {
+    -fx-background-color: -c-border;
+    -fx-padding: 0 0.5 0 0.5;
 }
-
-.text-area {
-    -fx-control-inner-background: #14151a;
-    -fx-background-color: #14151a;
-    -fx-text-fill: #d4d8e0;
-    -fx-font-family: "JetBrains Mono", "Cascadia Code", monospace;
-    -fx-font-size: 12.5px;
-}
-
-.text-area .content {
-    -fx-background-color: #14151a;
-}
-
 .scroll-bar {
-    -fx-background-color: #14151a;
+    -fx-background-color: transparent;
 }
-
+.scroll-bar .track {
+    -fx-background-color: transparent;
+}
 .scroll-bar .thumb {
-    -fx-background-color: #3a3f4b;
+    -fx-background-color: #343a46;
     -fx-background-radius: 4;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: #434a58;
+}
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button,
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
 }

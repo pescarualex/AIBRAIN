@@ -6,13 +6,16 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -23,71 +26,68 @@ import java.util.List;
  */
 public class App extends Application {
 
+    private static final int DETAIL_CAP = 300;   // messages rendered per session
+
     private final MemoryDao dao = new MemoryDao();
 
     private final ListView<MemoryDao.Topic> topicList = new ListView<>();
     private final ListView<MemoryDao.Hit> hitList = new ListView<>();
     private final StackPane listArea = new StackPane();
-    private final TextArea detail = new TextArea();
+    private final TextFlow detailFlow = new TextFlow();
     private final TextField searchField = new TextField();
     private final Label statsLabel = new Label();
 
     @Override
     public void start(Stage stage) {
-        // --- top bar: title, stats, search ---
-        Label title = new Label("AIBRAIN");
-        title.getStyleClass().add("title");
+        // ---- top bar ----
+        Label wordmark = new Label("AIBRAIN");
+        wordmark.getStyleClass().add("wordmark");
         statsLabel.getStyleClass().add("stats");
-        searchField.setPromptText("Search your memory…  (Enter)");
+        searchField.setPromptText("Search your memory…   (Enter)");
+        searchField.getStyleClass().add("search");
         searchField.setOnAction(e -> onSearch());
         HBox.setHgrow(searchField, Priority.ALWAYS);
-        HBox top = new HBox(14, title, statsLabel, searchField);
+        HBox top = new HBox(16, wordmark, statsLabel, searchField);
         top.getStyleClass().add("topbar");
-        top.setPadding(new Insets(12, 14, 12, 14));
+        top.setPadding(new Insets(11, 14, 11, 16));
 
-        // --- recent-topics list ---
-        topicList.setCellFactory(lv -> new ListCell<>() {
-            @Override protected void updateItem(MemoryDao.Topic t, boolean empty) {
-                super.updateItem(t, empty);
-                if (empty || t == null) { setText(null); return; }
-                String sub = t.sub() == null || t.sub().isBlank() ? "" : "  —  " + t.sub();
-                setText("[" + t.date() + "]  " + t.label() + sub);
-            }
-        });
+        // ---- recent-topics list ----
+        topicList.setCellFactory(lv -> new TopicCell(lv));
+        topicList.setPlaceholder(placeholder("No topics yet. Run /memory-index in Claude Code."));
         topicList.getSelectionModel().selectedItemProperty().addListener((o, a, t) -> {
             if (t != null) showSession(t.sessionId());
         });
 
-        // --- search-results list ---
-        hitList.setCellFactory(lv -> new ListCell<>() {
-            @Override protected void updateItem(MemoryDao.Hit h, boolean empty) {
-                super.updateItem(h, empty);
-                if (empty || h == null) { setText(null); return; }
-                setText("[" + h.date() + "]  " + h.title() + "\n    " + h.snippet());
-            }
-        });
+        // ---- search-results list ----
+        hitList.setCellFactory(lv -> new HitCell(lv));
+        hitList.setPlaceholder(placeholder("No matches."));
         hitList.getSelectionModel().selectedItemProperty().addListener((o, a, h) -> {
             if (h != null) showSession(h.sessionId());
         });
 
         listArea.getChildren().add(topicList);
 
-        // --- detail pane ---
-        detail.setEditable(false);
-        detail.setWrapText(true);
+        // ---- detail pane ----
+        detailFlow.getStyleClass().add("detail");
+        detailFlow.setPadding(new Insets(16, 18, 20, 18));
+        ScrollPane detailScroll = new ScrollPane(detailFlow);
+        detailScroll.getStyleClass().add("detail-scroll");
+        detailScroll.setFitToWidth(true);
 
-        SplitPane split = new SplitPane(listArea, detail);
-        split.setDividerPositions(0.42);
+        SplitPane split = new SplitPane(listArea, detailScroll);
+        split.setDividerPositions(0.40);
 
         BorderPane root = new BorderPane();
         root.setTop(top);
         root.setCenter(split);
 
-        Scene scene = new Scene(root, 1040, 660);
-        var cssUrl = getClass().getResource("style.css");
-        if (cssUrl != null) scene.getStylesheets().add(cssUrl.toExternalForm());
+        Scene scene = new Scene(root, 1080, 680);
+        var css = getClass().getResource("style.css");
+        if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
         stage.setTitle("AIBRAIN — Memory");
+        stage.setMinWidth(780);
+        stage.setMinHeight(500);
         stage.setScene(scene);
         stage.show();
 
@@ -96,9 +96,9 @@ public class App extends Application {
 
     private void refresh() {
         MemoryDao.Stats s = dao.stats();
-        statsLabel.setText(s.sessions() + " sessions · " + s.messages() + " messages · "
-                           + s.facts() + " facts · " + String.format("%.1f MB", s.mb()));
-        topicList.getItems().setAll(dao.recentTopics(50));
+        statsLabel.setText(s.sessions() + " sessions  ·  " + s.messages() + " messages  ·  "
+                           + s.facts() + " facts  ·  " + String.format("%.1f MB", s.mb()));
+        topicList.getItems().setAll(dao.recentTopics(60));
     }
 
     private void onSearch() {
@@ -107,18 +107,108 @@ public class App extends Application {
             listArea.getChildren().setAll(topicList);
             return;
         }
-        List<MemoryDao.Hit> hits = dao.search(q, 60);
-        hitList.getItems().setAll(hits);
+        hitList.getItems().setAll(dao.search(q, 60));
         listArea.getChildren().setAll(hitList);
     }
 
     private void showSession(String sessionId) {
-        StringBuilder sb = new StringBuilder();
-        for (MemoryDao.Message m : dao.sessionMessages(sessionId)) {
-            sb.append(m.role().toUpperCase()).append(":\n").append(m.text()).append("\n\n");
+        detailFlow.getChildren().clear();
+        List<MemoryDao.Message> msgs = dao.sessionMessages(sessionId);
+        int shown = Math.min(DETAIL_CAP, msgs.size());
+        for (int i = 0; i < shown; i++) {
+            MemoryDao.Message m = msgs.get(i);
+            boolean user = "user".equalsIgnoreCase(m.role());
+            Text role = new Text(m.role().toUpperCase() + "\n");
+            role.getStyleClass().addAll("msg-role", user ? "role-user" : "role-assistant");
+            Text body = new Text(m.text() + "\n\n");
+            body.getStyleClass().add("msg-text");
+            detailFlow.getChildren().addAll(role, body);
         }
-        detail.setText(sb.toString());
-        detail.positionCaret(0);
+        if (msgs.size() > shown) {
+            Text more = new Text("…  " + (msgs.size() - shown) + " more messages in this session\n");
+            more.getStyleClass().add("msg-more");
+            detailFlow.getChildren().add(more);
+        }
+    }
+
+    private Label placeholder(String text) {
+        Label l = new Label(text);
+        l.getStyleClass().add("placeholder");
+        return l;
+    }
+
+    /** Shorten a project key like "-home-alex-Documents-dev-InkVault" to "InkVault". */
+    static String shortProject(String project) {
+        if (project == null || project.isBlank()) return "";
+        if (!project.contains("-")) return project;           // e.g. "claude.ai"
+        String[] parts = project.split("-");
+        for (int i = parts.length - 1; i >= 0; i--) {
+            if (!parts[i].isBlank()) return parts[i];
+        }
+        return project;
+    }
+
+    // ---- custom cells ----
+
+    /** Two-line topic row: eyebrow (date · project), title, summary. */
+    private static final class TopicCell extends ListCell<MemoryDao.Topic> {
+        private final Label meta = new Label();
+        private final Label title = new Label();
+        private final Label sub = new Label();
+        private final VBox box = new VBox(2, meta, title, sub);
+
+        TopicCell(ListView<MemoryDao.Topic> lv) {
+            meta.getStyleClass().add("topic-meta");
+            title.getStyleClass().add("topic-title");
+            sub.getStyleClass().add("topic-sub");
+            box.getStyleClass().add("row-box");
+            title.setMaxWidth(Double.MAX_VALUE);
+            sub.setMaxWidth(Double.MAX_VALUE);
+            meta.setMaxWidth(Double.MAX_VALUE);
+            setText(null);
+            prefWidthProperty().bind(lv.widthProperty().subtract(20));
+        }
+
+        @Override protected void updateItem(MemoryDao.Topic t, boolean empty) {
+            super.updateItem(t, empty);
+            if (empty || t == null) { setGraphic(null); return; }
+            String proj = shortProject(t.project());
+            meta.setText(t.date() + (proj.isBlank() ? "" : "   ·   " + proj));
+            title.setText(t.label() == null ? "" : t.label());
+            boolean hasSub = t.sub() != null && !t.sub().isBlank();
+            sub.setText(hasSub ? t.sub() : "");
+            sub.setManaged(hasSub);
+            sub.setVisible(hasSub);
+            setGraphic(box);
+        }
+    }
+
+    /** Two-line search hit: eyebrow (date), title, snippet. */
+    private static final class HitCell extends ListCell<MemoryDao.Hit> {
+        private final Label meta = new Label();
+        private final Label title = new Label();
+        private final Label snip = new Label();
+        private final VBox box = new VBox(2, meta, title, snip);
+
+        HitCell(ListView<MemoryDao.Hit> lv) {
+            meta.getStyleClass().add("topic-meta");
+            title.getStyleClass().add("topic-title");
+            snip.getStyleClass().add("topic-sub");
+            box.getStyleClass().add("row-box");
+            title.setMaxWidth(Double.MAX_VALUE);
+            snip.setMaxWidth(Double.MAX_VALUE);
+            setText(null);
+            prefWidthProperty().bind(lv.widthProperty().subtract(20));
+        }
+
+        @Override protected void updateItem(MemoryDao.Hit h, boolean empty) {
+            super.updateItem(h, empty);
+            if (empty || h == null) { setGraphic(null); return; }
+            meta.setText(h.date());
+            title.setText(h.title() == null ? "" : h.title());
+            snip.setText(h.snippet() == null ? "" : h.snippet());
+            setGraphic(box);
+        }
     }
 
     public static void main(String[] args) {
