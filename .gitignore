@@ -1,0 +1,12 @@
+# Maven build output
+core/target/
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+
+# OS / editor noise
+.DS_Store
+*.swp
+core/dependency-reduced-pom.xml

@@ -1,0 +1,17 @@
+{
+  "description": "Brings the most recent topics back into context when a session starts (SessionStart).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "java -jar \"${CLAUDE_PLUGIN_ROOT}/bin/memory.jar\" hook",
+            "timeout": 15,
+            "statusMessage": "Recalling previous conversations…"
+          }
+        ]
+      }
+    ]
+  }
+}

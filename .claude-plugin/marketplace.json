@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "aibrain",
+  "description": "AIBRAIN — local-first persistent memory for Claude Code.",
+  "owner": {
+    "name": "Alex"
+  },
+  "plugins": [
+    {
+      "name": "claude-memory",
+      "description": "Local-first persistent memory: remembers your previous sessions and brings them back into context on startup. Your data stays on your machine.",
+      "source": "./claude-memory",
+      "category": "productivity"
+    }
+  ]
+}
