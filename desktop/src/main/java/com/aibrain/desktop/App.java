@@ -55,7 +55,7 @@ public class App extends Application {
         topicList.setCellFactory(lv -> new TopicCell(lv));
         topicList.setPlaceholder(placeholder("No topics yet. Run /memory-index in Claude Code."));
         topicList.getSelectionModel().selectedItemProperty().addListener((o, a, t) -> {
-            if (t != null) showSession(t.sessionId());
+            if (t != null) showTopic(t);
         });
 
         // ---- search-results list ----
@@ -111,10 +111,22 @@ public class App extends Application {
         listArea.getChildren().setAll(hitList);
     }
 
-    /** Render a session as a chat: user bubbles on the right, assistant on the left. */
+    /** Show one topic: only its slice of the session (or the whole session if unbounded). */
+    private void showTopic(MemoryDao.Topic t) {
+        List<MemoryDao.Message> msgs = t.startSeq() < 0
+            ? dao.sessionMessages(t.sessionId())
+            : dao.messagesInRange(t.sessionId(), t.startSeq(), t.endSeq());
+        renderMessages(msgs);
+    }
+
+    /** Show a whole session (used for search hits). */
     private void showSession(String sessionId) {
+        renderMessages(dao.sessionMessages(sessionId));
+    }
+
+    /** Render messages as a chat: user bubbles on the right, assistant on the left. */
+    private void renderMessages(List<MemoryDao.Message> msgs) {
         detailBox.getChildren().clear();
-        List<MemoryDao.Message> msgs = dao.sessionMessages(sessionId);
         int shown = Math.min(DETAIL_CAP, msgs.size());
         for (int i = 0; i < shown; i++) {
             MemoryDao.Message m = msgs.get(i);

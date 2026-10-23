@@ -1,5 +1,5 @@
 # Maven build output
-core/target/
+target/
 
 # Local databases
 *.db
@@ -9,4 +9,4 @@ core/target/
 # OS / editor noise
 .DS_Store
 *.swp
-core/dependency-reduced-pom.xml
+**/dependency-reduced-pom.xml

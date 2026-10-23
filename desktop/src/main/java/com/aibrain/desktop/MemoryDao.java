@@ -19,8 +19,13 @@ public final class MemoryDao {
 
     public record Stats(long sessions, long messages, long facts, double mb) {}
 
-    /** A recall entry: a session topic (segment) or, as fallback, the session itself. */
-    public record Topic(String date, String project, String label, String sub, String sessionId) {}
+    /**
+     * A recall entry: a session topic (segment) or, as fallback, the session itself.
+     * {@code startSeq}/{@code endSeq} bound the topic's messages; -1 means
+     * "from the start" / "to the end" (and startSeq -1 means the whole session).
+     */
+    public record Topic(String date, String project, String label, String sub,
+                        String sessionId, int startSeq, int endSeq) {}
 
     /** A full-text search hit. */
     public record Hit(String date, String title, String snippet, String sessionId) {}
@@ -34,7 +39,14 @@ public final class MemoryDao {
     }
 
     private Connection open() throws SQLException {
-        return DriverManager.getConnection("jdbc:sqlite:" + dbPath());
+        Connection c = DriverManager.getConnection("jdbc:sqlite:" + dbPath());
+        // best-effort migration so this reader works even before the plugin core runs
+        try (Statement st = c.createStatement()) {
+            st.execute("ALTER TABLE segments ADD COLUMN start_seq INTEGER");
+        } catch (SQLException ignore) {
+            // table missing or column already present
+        }
+        return c;
     }
 
     public Stats stats() {
@@ -60,14 +72,21 @@ public final class MemoryDao {
                     String date = shortDate(rs.getString("ended_at"));
                     String title = rs.getString("title");
                     String summ = rs.getString("summary");
-                    List<String[]> segs = segments(c, sid);
+                    List<Seg> segs = segments(c, sid);   // chronological (idx ASC)
                     if (!segs.isEmpty()) {
-                        for (String[] seg : segs) {
-                            out.add(new Topic(date, proj, seg[0], seg[1], sid));
-                            if (out.size() >= limit) break;
+                        int n = segs.size();
+                        // add most-recent topic first; each topic spans [start, nextStart)
+                        for (int i = n - 1; i >= 0 && out.size() < limit; i--) {
+                            int start = segs.get(i).startSeq() != null ? segs.get(i).startSeq() : -1;
+                            int end = -1;
+                            if (i + 1 < n && segs.get(i + 1).startSeq() != null) {
+                                end = segs.get(i + 1).startSeq();
+                            }
+                            out.add(new Topic(date, proj, segs.get(i).topic(), segs.get(i).summary(),
+                                              sid, start, end));
                         }
                     } else {
-                        out.add(new Topic(date, proj, summ != null ? summ : title, null, sid));
+                        out.add(new Topic(date, proj, summ != null ? summ : title, null, sid, -1, -1));
                     }
                 }
             }
@@ -114,14 +133,41 @@ public final class MemoryDao {
         return out;
     }
 
-    private List<String[]> segments(Connection c, String sid) throws SQLException {
-        List<String[]> out = new ArrayList<>();
+    private record Seg(int idx, String topic, String summary, Integer startSeq) {}
+
+    private List<Seg> segments(Connection c, String sid) throws SQLException {
+        List<Seg> out = new ArrayList<>();
         try (PreparedStatement ps = c.prepareStatement(
-                "SELECT topic,summary FROM segments WHERE session_id=? ORDER BY idx DESC")) {
+                "SELECT idx, topic, summary, start_seq FROM segments WHERE session_id=? ORDER BY idx ASC")) {
             ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) out.add(new String[]{rs.getString(1), rs.getString(2)});
+                while (rs.next()) {
+                    int ss = rs.getInt("start_seq");
+                    Integer startSeq = rs.wasNull() ? null : ss;
+                    out.add(new Seg(rs.getInt("idx"), rs.getString("topic"),
+                                    rs.getString("summary"), startSeq));
+                }
             }
+        }
+        return out;
+    }
+
+    /** Messages of a session within [startSeq, endSeq); startSeq < 0 means the whole session. */
+    public List<Message> messagesInRange(String sessionId, int startSeq, int endSeq) {
+        if (startSeq < 0) return sessionMessages(sessionId);
+        List<Message> out = new ArrayList<>();
+        String sql = "SELECT role, text FROM messages WHERE session_id=? AND seq>=?"
+                   + (endSeq >= 0 ? " AND seq<?" : "") + " ORDER BY seq";
+        try (Connection c = open();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            ps.setInt(2, startSeq);
+            if (endSeq >= 0) ps.setInt(3, endSeq);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(new Message(rs.getString(1), rs.getString(2)));
+            }
+        } catch (Exception e) {
+            // ignore
         }
         return out;
     }

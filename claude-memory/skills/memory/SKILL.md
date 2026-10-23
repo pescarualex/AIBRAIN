@@ -51,8 +51,10 @@ Segmentation is done by **you (the model)** at `/memory-index`, not by a determi
 1. `pending` → sessions without segments (includes the current session — running
    `/memory-index` manually is a checkpoint of the conversation so far; a later run refreshes it).
 2. for each: `spine <sid>`, read the user-message column, identify topics in chronological
-   order (short `topic` + one-sentence `summary`).
-3. write them: `set-segments <sid>` with `[{"topic":"…","summary":"…"}, …]` on stdin.
+   order (short `topic` + one-sentence `summary` + `start_seq`, the `[seq]` where the topic begins).
+3. write them: `set-segments <sid>` with `[{"topic":"…","summary":"…","start_seq":0}, …]` on stdin.
+   `start_seq` lets the desktop app show just that topic's slice; it is optional (a topic without
+   it falls back to the whole session).
 
 A re-indexed session (changed content) loses its segments and reappears in `pending`, so
 re-segmentation is automatic. A session with no segments falls back gracefully to its title.

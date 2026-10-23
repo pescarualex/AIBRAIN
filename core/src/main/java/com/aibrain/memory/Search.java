@@ -121,14 +121,18 @@ final class Search {
                 del.executeUpdate();
             }
             try (PreparedStatement ins = c.prepareStatement(
-                    "INSERT INTO segments(session_id,idx,topic,summary,created_at) VALUES(?,?,?,?,?)")) {
+                    "INSERT INTO segments(session_id,idx,topic,summary,start_seq,created_at) " +
+                    "VALUES(?,?,?,?,?,?)")) {
                 int i = 0;
                 for (JsonNode seg : data) {
                     ins.setString(1, sid);
                     ins.setInt(2, i++);
                     ins.setString(3, shorten(seg.path("topic").asText(""), 120));
                     ins.setString(4, shorten(seg.path("summary").asText(""), 300));
-                    ins.setString(5, Content.now());
+                    JsonNode ss = seg.path("start_seq");
+                    if (ss.isIntegralNumber()) ins.setInt(5, ss.asInt());
+                    else ins.setNull(5, java.sql.Types.INTEGER);
+                    ins.setString(6, Content.now());
                     ins.executeUpdate();
                 }
             }

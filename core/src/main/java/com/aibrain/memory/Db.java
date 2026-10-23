@@ -28,7 +28,7 @@ final class Db {
           id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, topic TEXT,
           content TEXT, source_session TEXT, created_at TEXT, updated_at TEXT);
         CREATE TABLE IF NOT EXISTS segments(
-          session_id TEXT, idx INTEGER, topic TEXT, summary TEXT, created_at TEXT,
+          session_id TEXT, idx INTEGER, topic TEXT, summary TEXT, start_seq INTEGER, created_at TEXT,
           PRIMARY KEY(session_id, idx));
         CREATE INDEX IF NOT EXISTS idx_seg_session ON segments(session_id);
         CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
@@ -48,6 +48,12 @@ final class Db {
         try (Statement st = c.createStatement()) {
             for (String stmt : SCHEMA.split(";")) {
                 if (!stmt.isBlank()) st.execute(stmt);
+            }
+            // migration: add segments.start_seq to databases created before it existed
+            try {
+                st.execute("ALTER TABLE segments ADD COLUMN start_seq INTEGER");
+            } catch (java.sql.SQLException ignore) {
+                // column already present
             }
         }
         return c;
