@@ -2,6 +2,7 @@ package com.aibrain.desktop;
 
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -14,8 +15,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -26,14 +25,16 @@ import java.util.List;
  */
 public class App extends Application {
 
-    private static final int DETAIL_CAP = 300;   // messages rendered per session
+    private static final int DETAIL_CAP = 300;    // messages rendered per session
+    private static final double BUBBLE_FRACTION = 0.74;
 
     private final MemoryDao dao = new MemoryDao();
 
     private final ListView<MemoryDao.Topic> topicList = new ListView<>();
     private final ListView<MemoryDao.Hit> hitList = new ListView<>();
     private final StackPane listArea = new StackPane();
-    private final TextFlow detailFlow = new TextFlow();
+    private final VBox detailBox = new VBox(4);
+    private final ScrollPane detailScroll = new ScrollPane(detailBox);
     private final TextField searchField = new TextField();
     private final Label statsLabel = new Label();
 
@@ -44,7 +45,6 @@ public class App extends Application {
         wordmark.getStyleClass().add("wordmark");
         statsLabel.getStyleClass().add("stats");
         searchField.setPromptText("Search your memory…   (Enter)");
-        searchField.getStyleClass().add("search");
         searchField.setOnAction(e -> onSearch());
         HBox.setHgrow(searchField, Priority.ALWAYS);
         HBox top = new HBox(16, wordmark, statsLabel, searchField);
@@ -67,10 +67,10 @@ public class App extends Application {
 
         listArea.getChildren().add(topicList);
 
-        // ---- detail pane ----
-        detailFlow.getStyleClass().add("detail");
-        detailFlow.setPadding(new Insets(16, 18, 20, 18));
-        ScrollPane detailScroll = new ScrollPane(detailFlow);
+        // ---- detail pane: chat-style bubbles ----
+        detailBox.getStyleClass().add("detail");
+        detailBox.setFillWidth(true);
+        detailBox.setPadding(new Insets(14, 16, 20, 16));
         detailScroll.getStyleClass().add("detail-scroll");
         detailScroll.setFitToWidth(true);
 
@@ -111,24 +111,32 @@ public class App extends Application {
         listArea.getChildren().setAll(hitList);
     }
 
+    /** Render a session as a chat: user bubbles on the right, assistant on the left. */
     private void showSession(String sessionId) {
-        detailFlow.getChildren().clear();
+        detailBox.getChildren().clear();
         List<MemoryDao.Message> msgs = dao.sessionMessages(sessionId);
         int shown = Math.min(DETAIL_CAP, msgs.size());
         for (int i = 0; i < shown; i++) {
             MemoryDao.Message m = msgs.get(i);
             boolean user = "user".equalsIgnoreCase(m.role());
-            Text role = new Text(m.role().toUpperCase() + "\n");
-            role.getStyleClass().addAll("msg-role", user ? "role-user" : "role-assistant");
-            Text body = new Text(m.text() + "\n\n");
-            body.getStyleClass().add("msg-text");
-            detailFlow.getChildren().addAll(role, body);
+
+            Label bubble = new Label(m.text());
+            bubble.setWrapText(true);
+            bubble.getStyleClass().addAll("bubble", user ? "bubble-user" : "bubble-assistant");
+            bubble.maxWidthProperty().bind(detailScroll.widthProperty().multiply(BUBBLE_FRACTION));
+
+            HBox row = new HBox(bubble);
+            row.setAlignment(user ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+            detailBox.getChildren().add(row);
         }
         if (msgs.size() > shown) {
-            Text more = new Text("…  " + (msgs.size() - shown) + " more messages in this session\n");
-            more.getStyleClass().add("msg-more");
-            detailFlow.getChildren().add(more);
+            Label more = new Label("…  " + (msgs.size() - shown) + " more messages in this session");
+            more.getStyleClass().add("bubble-more");
+            HBox row = new HBox(more);
+            row.setAlignment(Pos.CENTER);
+            detailBox.getChildren().add(row);
         }
+        detailScroll.setVvalue(0);
     }
 
     private Label placeholder(String text) {
@@ -148,7 +156,7 @@ public class App extends Application {
         return project;
     }
 
-    // ---- custom cells ----
+    // ---- custom list cells ----
 
     /** Two-line topic row: eyebrow (date · project), title, summary. */
     private static final class TopicCell extends ListCell<MemoryDao.Topic> {

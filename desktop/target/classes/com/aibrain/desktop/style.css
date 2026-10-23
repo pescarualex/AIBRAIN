@@ -101,7 +101,7 @@
     -fx-font-size: 12px;
 }
 
-/* ---- detail pane ---- */
+/* ---- detail pane: chat bubbles ---- */
 .detail-scroll {
     -fx-background-color: -c-bg;
     -fx-background-insets: 0;
@@ -111,22 +111,28 @@
 }
 .detail {
     -fx-background-color: -c-bg;
-    -fx-line-spacing: 2px;
 }
-.msg-role {
-    -fx-font-size: 10.5px;
-    -fx-font-weight: bold;
-}
-.role-user      { -fx-fill: -c-accent; }
-.role-assistant { -fx-fill: -c-assistant; }
-.msg-text {
-    -fx-fill: #c9cdd7;
-    -fx-font-family: "JetBrains Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
+.bubble {
+    -fx-background-radius: 13;
+    -fx-padding: 9 13 9 13;
     -fx-font-size: 12.5px;
+    -fx-line-spacing: 2px;
+    -fx-text-fill: -c-fg;
 }
-.msg-more {
-    -fx-fill: -c-faint;
+/* assistant: left, cool neutral with a hairline edge */
+.bubble-assistant {
+    -fx-background-color: #15181e;
+    -fx-border-color: -c-border;
+    -fx-border-radius: 13;
+}
+/* user: right, lifted blue-grey */
+.bubble-user {
+    -fx-background-color: #232a39;
+}
+.bubble-more {
+    -fx-text-fill: -c-faint;
     -fx-font-size: 11.5px;
+    -fx-padding: 6 0 0 0;
 }
 .placeholder {
     -fx-text-fill: -c-faint;
