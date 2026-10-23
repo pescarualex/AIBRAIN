@@ -81,7 +81,7 @@ public class App extends Application {
         root.setTop(top);
         root.setCenter(split);
 
-        Scene scene = new Scene(root, 1080, 680);
+        Scene scene = new Scene(root, 1600, 1000);
         var css = getClass().getResource("style.css");
         if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
