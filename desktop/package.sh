@@ -72,6 +72,7 @@ jpackage \
     --main-class "$MAIN_CLASS" \
     --add-modules "$MODS" \
     --vendor "AIBRAIN" \
+    --resource-dir "$HERE/jpackage" \
     --dest "$DEST" \
     "${EXTRA[@]}"
 
