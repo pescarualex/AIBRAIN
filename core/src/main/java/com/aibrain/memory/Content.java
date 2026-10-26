@@ -19,6 +19,21 @@ final class Content {
         return OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toString();
     }
 
+    /**
+     * Parse a positive-integer CLI argument, falling back to {@code def} when it is
+     * absent, non-numeric, out of int range or not positive. Keeps commands like
+     * {@code pending abc} or {@code recall -5} from crashing with a stack trace.
+     */
+    static int posIntArg(String[] args, int idx, int def) {
+        if (args == null || args.length <= idx || args[idx] == null) return def;
+        try {
+            int v = Integer.parseInt(args[idx].strip());
+            return v > 0 ? v : def;
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
     static String clip(String s) {
         return clip(s, MAX_MSG);
     }

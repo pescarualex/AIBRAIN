@@ -76,7 +76,7 @@ final class Recall {
     }
 
     static void recall(String[] args) throws Exception {
-        int n = args.length > 1 ? Integer.parseInt(args[1]) : 5;
+        int n = Content.posIntArg(args, 1, 5);
         try (Connection c = Db.open()) {
             List<Entry> entries = recentEntries(c, n, null);
             System.out.println("Last " + entries.size() + " topics:");

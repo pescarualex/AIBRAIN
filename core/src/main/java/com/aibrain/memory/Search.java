@@ -22,6 +22,12 @@ final class Search {
             return;
         }
         String q = ftsQuery(String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
+        if (q.isEmpty()) {
+            // Input was only whitespace or punctuation the tokenizer drops: an empty
+            // FTS5 MATCH is a syntax error, so there is simply nothing to look for.
+            System.out.println("No results.");
+            return;
+        }
         int limit = 8;
         try (Connection c = Db.open();
              PreparedStatement ps = c.prepareStatement(
@@ -59,7 +65,7 @@ final class Search {
     }
 
     static void pending(String[] args) throws Exception {
-        int n = args.length > 1 ? Integer.parseInt(args[1]) : 20;
+        int n = Content.posIntArg(args, 1, 20);
         try (Connection c = Db.open();
              PreparedStatement ps = c.prepareStatement(
                 "SELECT s.id, s.ended_at, s.msg_count, s.project, COALESCE(s.summary, s.title) " +
