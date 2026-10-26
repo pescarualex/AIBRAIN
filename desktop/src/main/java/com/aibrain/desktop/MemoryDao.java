@@ -32,6 +32,24 @@ public final class MemoryDao {
 
     public record Message(String role, String text) {}
 
+    /**
+     * Turn raw user words into a safe FTS5 MATCH expression. FTS5 treats characters
+     * like '-', ':' and '*' as query operators, so a word such as "ADR-65" is parsed
+     * as an expression ("ADR" minus column "65") and fails. We wrap each
+     * whitespace-separated token in double quotes (doubling any '"' inside it) so it
+     * matches as a literal phrase; the space between tokens keeps the implicit AND.
+     */
+    static String ftsQuery(String raw) {
+        if (raw == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String token : raw.strip().split("\\s+")) {
+            if (token.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(' ');
+            sb.append('"').append(token.replace("\"", "\"\"")).append('"');
+        }
+        return sb.toString();
+    }
+
     static Path dbPath() {
         String env = System.getenv("AIBRAIN_DB");
         if (env != null && !env.isBlank()) return Path.of(env);
@@ -98,13 +116,15 @@ public final class MemoryDao {
 
     public List<Hit> search(String query, int limit) {
         List<Hit> out = new ArrayList<>();
+        String fts = ftsQuery(query);
+        if (fts.isEmpty()) return out;   // nothing searchable (empty / only punctuation)
         String sql = "SELECT f.session_id, s.ended_at, s.title, " +
                      "snippet(messages_fts,1,'[',']','…',12) " +
                      "FROM messages_fts f JOIN sessions s ON s.id=f.session_id " +
                      "WHERE messages_fts MATCH ? ORDER BY s.ended_at DESC LIMIT ?";
         try (Connection c = open();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, query);
+            ps.setString(1, fts);
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

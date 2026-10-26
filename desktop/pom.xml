@@ -13,14 +13,69 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>17.0.13</javafx.version>
+        <!-- Classpath launcher (a non-Application main) for the fat jar and the native bundle. -->
+        <launcher.class>com.aibrain.desktop.Launcher</launcher.class>
+        <!-- Overridden per build OS/arch by the profiles below. -->
+        <javafx.platform>linux</javafx.platform>
     </properties>
 
+    <!--
+      Pick the JavaFX native classifier for the machine doing the build. jpackage
+      produces a bundle for the OS it runs on, so building on each target OS yields
+      that OS's package; these profiles make the same `mvn` command do the right thing.
+    -->
+    <profiles>
+        <profile>
+            <id>jfx-linux</id>
+            <activation><os><family>unix</family><name>linux</name><arch>amd64</arch></os></activation>
+            <properties><javafx.platform>linux</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>jfx-linux-aarch64</id>
+            <activation><os><family>unix</family><name>linux</name><arch>aarch64</arch></os></activation>
+            <properties><javafx.platform>linux-aarch64</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>jfx-mac</id>
+            <activation><os><family>mac</family><arch>x86_64</arch></os></activation>
+            <properties><javafx.platform>mac</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>jfx-mac-aarch64</id>
+            <activation><os><family>mac</family><arch>aarch64</arch></os></activation>
+            <properties><javafx.platform>mac-aarch64</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>jfx-win</id>
+            <activation><os><family>windows</family></os></activation>
+            <properties><javafx.platform>win</javafx.platform></properties>
+        </profile>
+    </profiles>
+
     <dependencies>
-        <!-- JavaFX UI toolkit (natives resolved by the javafx-maven-plugin at run) -->
+        <!--
+          JavaFX, resolved for the building machine's platform via ${javafx.platform}
+          (set by the OS profiles above). The classifier jars carry both the classes
+          AND the native libraries; the plain (no-classifier) jars are empty stubs, so
+          the classifier is required for the fat jar to actually contain JavaFX.
+        -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
         <!-- SQLite driver with FTS5, shared DB with the plugin core -->
         <dependency>
@@ -31,7 +86,11 @@
     </dependencies>
 
     <build>
+        <!-- The fat jar is target/aibrain-desktop.jar (the packaging script feeds it to jpackage). -->
+        <finalName>aibrain-desktop</finalName>
+
         <plugins>
+            <!-- Dev run: `mvn -pl desktop javafx:run` (uses the module path, so App directly). -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -39,6 +98,43 @@
                 <configuration>
                     <mainClass>com.aibrain.desktop.App</mainClass>
                 </configuration>
+            </plugin>
+
+            <!-- Self-contained runnable jar (classes + JavaFX + natives + sqlite-jdbc). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${launcher.class}</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <!-- Drop per-jar module descriptors and signatures that collide in a fat jar. -->
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

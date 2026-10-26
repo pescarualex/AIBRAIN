@@ -37,9 +37,13 @@ AIBRAIN/
 │   ├── skills/memory/SKILL.md
 │   ├── commands/memory-index.md
 │   └── bin/memory.jar                # built core (produced by the Maven build)
-└── core/                             # Java source for memory.jar
+├── core/                             # Java source for memory.jar
+│   ├── pom.xml
+│   └── src/main/java/com/aibrain/memory/
+└── desktop/                          # JavaFX app to browse/search the same DB
     ├── pom.xml
-    └── src/main/java/com/aibrain/memory/
+    ├── package.sh                    # builds a native, double-clickable bundle
+    └── src/main/java/com/aibrain/desktop/
 ```
 
 ## Build the core
@@ -49,6 +53,26 @@ cd core && mvn -q package
 ```
 
 This produces `claude-memory/bin/memory.jar`.
+
+## Desktop app
+
+A JavaFX desktop app reads the **same** `~/.aibrain/memory.db` so you can browse and
+search your memory in a window: a stats bar, full-text search, and recent topics you
+can click to read.
+
+```
+cd desktop && mvn -q javafx:run        # run it during development
+```
+
+To ship it as a native, double-clickable application with its **own bundled Java
+runtime** (the user does not need Java installed):
+
+```
+cd desktop && ./package.sh
+```
+
+`jpackage` builds a package for the OS it runs on — `.rpm`/`.deb` on Linux, `.dmg`
+on macOS, `.exe` on Windows — into `desktop/target/dist/`.
 
 ## Data location
 
