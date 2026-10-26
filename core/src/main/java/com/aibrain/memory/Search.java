@@ -21,7 +21,7 @@ final class Search {
             System.out.println("Usage: search <words>");
             return;
         }
-        String q = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        String q = ftsQuery(String.join(" ", Arrays.copyOfRange(args, 1, args.length)));
         int limit = 8;
         try (Connection c = Db.open();
              PreparedStatement ps = c.prepareStatement(
@@ -146,6 +146,24 @@ final class Search {
              ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + table)) {
             return rs.next() ? rs.getLong(1) : 0;
         }
+    }
+
+    /**
+     * Turn raw user words into a safe FTS5 MATCH expression.
+     * FTS5 treats characters like '-', ':' and '*' as query operators, so a word
+     * such as "ADR-65" is parsed as "ADR" minus column "65" ("no such column: 65").
+     * We wrap each whitespace-separated token in double quotes (doubling any '"'
+     * inside it) so every token is matched as a literal phrase; the space between
+     * tokens keeps FTS5's implicit AND, so all words must still appear.
+     */
+    static String ftsQuery(String raw) {
+        StringBuilder out = new StringBuilder();
+        for (String token : raw.strip().split("\\s+")) {
+            if (token.isEmpty()) continue;
+            if (out.length() > 0) out.append(' ');
+            out.append('"').append(token.replace("\"", "\"\"")).append('"');
+        }
+        return out.toString();
     }
 
     private static String shorten(String s, int n) {
