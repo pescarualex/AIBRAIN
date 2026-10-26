@@ -10,3 +10,6 @@ target/
 .DS_Store
 *.swp
 **/dependency-reduced-pom.xml
+
+# Compiled icon generator
+desktop/icon/*.class

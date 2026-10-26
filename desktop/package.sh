@@ -19,7 +19,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
 APP_NAME="AIBRAIN"
-APP_VERSION="0.1.1"
+APP_VERSION="0.1.2"
 MAIN_JAR="aibrain-desktop.jar"
 MAIN_CLASS="com.aibrain.desktop.Launcher"
 DEST="target/dist"
@@ -46,21 +46,28 @@ cp "target/$MAIN_JAR" "$STAGE/"
 # image can be slimmed later by replacing this with an explicit jlink module list.
 MODS="$(java --list-modules | sed 's/@.*//' | paste -sd, -)"
 
-# Pick the installer type for this OS, with a safe fallback to a raw app-image.
+# Pick the installer type and the platform's icon file for this OS, with a safe
+# fallback to a raw app-image. jpackage wants a format per platform (.png on
+# Linux, .icns on macOS, .ico on Windows); if the file is missing it keeps its
+# default icon instead of failing.
+ICON=""
 case "$(uname -s)" in
     Linux)
         if command -v rpmbuild >/dev/null 2>&1;  then TYPE="rpm"
         elif command -v dpkg-deb >/dev/null 2>&1; then TYPE="deb"
         else TYPE="app-image"; fi
-        EXTRA=(--linux-shortcut) ;;
+        EXTRA=(--linux-shortcut); ICON="$HERE/icon/aibrain.png" ;;
     Darwin)
-        TYPE="dmg";  EXTRA=() ;;
+        TYPE="dmg";  EXTRA=(); ICON="$HERE/icon/aibrain.icns" ;;
     MINGW*|MSYS*|CYGWIN*)
         if command -v candle >/dev/null 2>&1; then TYPE="exe"; else TYPE="app-image"; fi
-        EXTRA=(--win-shortcut --win-menu) ;;
+        EXTRA=(--win-shortcut --win-menu); ICON="$HERE/icon/aibrain.ico" ;;
     *)
         TYPE="app-image"; EXTRA=() ;;
 esac
+
+ICON_ARGS=()
+if [[ -n "$ICON" && -f "$ICON" ]]; then ICON_ARGS=(--icon "$ICON"); fi
 
 echo ">> jpackage --type $TYPE  (this embeds a Java runtime; takes a minute)…"
 jpackage \
@@ -74,6 +81,7 @@ jpackage \
     --vendor "AIBRAIN" \
     --resource-dir "$HERE/jpackage" \
     --dest "$DEST" \
+    "${ICON_ARGS[@]}" \
     "${EXTRA[@]}"
 
 echo ">> done. Bundle(s) in $HERE/$DEST:"
