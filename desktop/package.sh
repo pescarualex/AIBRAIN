@@ -19,7 +19,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
 APP_NAME="AIBRAIN"
-APP_VERSION="0.1.0"
+APP_VERSION="0.1.1"
 MAIN_JAR="aibrain-desktop.jar"
 MAIN_CLASS="com.aibrain.desktop.Launcher"
 DEST="target/dist"

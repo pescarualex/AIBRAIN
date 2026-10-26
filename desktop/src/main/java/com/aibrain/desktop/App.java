@@ -98,7 +98,7 @@ public class App extends Application {
         MemoryDao.Stats s = dao.stats();
         statsLabel.setText(s.sessions() + " sessions  ·  " + s.messages() + " messages  ·  "
                            + s.facts() + " facts  ·  " + String.format("%.1f MB", s.mb()));
-        topicList.getItems().setAll(dao.recentTopics(60));
+        topicList.getItems().setAll(dao.recentTopics());
     }
 
     private void onSearch() {

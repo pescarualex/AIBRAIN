@@ -76,15 +76,17 @@ public final class MemoryDao {
         }
     }
 
-    /** Recent topics (segments), most recent first; falls back to the session title. */
-    public List<Topic> recentTopics(int limit) {
+    /**
+     * Every session as topics, most recent first; a session without segments falls
+     * back to its title. No cap — the whole history is shown and the list scrolls.
+     */
+    public List<Topic> recentTopics() {
         List<Topic> out = new ArrayList<>();
-        String sql = "SELECT id,project,ended_at,title,summary FROM sessions ORDER BY ended_at DESC LIMIT ?";
+        String sql = "SELECT id,project,ended_at,title,summary FROM sessions ORDER BY ended_at DESC";
         try (Connection c = open();
              PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setInt(1, limit);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next() && out.size() < limit) {
+                while (rs.next()) {
                     String sid = rs.getString("id");
                     String proj = rs.getString("project");
                     String date = shortDate(rs.getString("ended_at"));
@@ -94,7 +96,7 @@ public final class MemoryDao {
                     if (!segs.isEmpty()) {
                         int n = segs.size();
                         // add most-recent topic first; each topic spans [start, nextStart)
-                        for (int i = n - 1; i >= 0 && out.size() < limit; i--) {
+                        for (int i = n - 1; i >= 0; i--) {
                             int start = segs.get(i).startSeq() != null ? segs.get(i).startSeq() : -1;
                             int end = -1;
                             if (i + 1 < n && segs.get(i + 1).startSeq() != null) {
