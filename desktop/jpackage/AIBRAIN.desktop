@@ -6,4 +6,5 @@ Icon=APPLICATION_ICON
 Terminal=false
 Type=Application
 Categories=Utility;
+StartupWMClass=com.aibrain.desktop.App
 DESKTOP_MIMES

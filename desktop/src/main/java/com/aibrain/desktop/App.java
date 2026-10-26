@@ -88,6 +88,13 @@ public class App extends Application {
         stage.setTitle("AIBRAIN — Memory");
         stage.setMinWidth(780);
         stage.setMinHeight(500);
+        // Window icon: what the dock / taskbar shows while the app runs (so it does
+        // not depend on the desktop file or the shell's icon cache). Several sizes
+        // let the window manager pick the crispest one.
+        for (String res : new String[]{"icon-256.png", "icon-64.png"}) {
+            var in = getClass().getResourceAsStream(res);
+            if (in != null) stage.getIcons().add(new javafx.scene.image.Image(in));
+        }
         stage.setScene(scene);
         stage.show();
 
