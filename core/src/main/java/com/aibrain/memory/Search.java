@@ -31,10 +31,12 @@ final class Search {
         int limit = 8;
         try (Connection c = Db.open();
              PreparedStatement ps = c.prepareStatement(
-                "SELECT f.session_id, s.ended_at, s.title, " +
-                "snippet(messages_fts,1,'»','«','…',14) " +
-                "FROM messages_fts f JOIN sessions s ON s.id=f.session_id " +
-                "WHERE messages_fts MATCH ? ORDER BY s.ended_at DESC LIMIT ?")) {
+                // external-content FTS: the hit's rowid is messages.id, so we know the seq
+                "SELECT m.session_id, s.ended_at, s.title, " +
+                "snippet(messages_fts,0,'»','«','…',14), m.seq " +
+                "FROM messages_fts f JOIN messages m ON m.id=f.rowid " +
+                "JOIN sessions s ON s.id=m.session_id " +
+                "WHERE messages_fts MATCH ? ORDER BY s.ended_at DESC, m.seq DESC LIMIT ?")) {
             ps.setString(1, q);
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {
@@ -43,7 +45,8 @@ final class Search {
                     any = true;
                     String end = shorten(rs.getString(2), 10);
                     String title = shorten(rs.getString(3), 50);
-                    System.out.println("  [" + end + "] " + title + "\n     …" + rs.getString(4) + "…");
+                    System.out.println("  [" + end + "] " + title + "  (" + rs.getString(1) +
+                                       " seq " + rs.getInt(5) + ")\n     …" + rs.getString(4) + "…");
                 }
                 if (!any) System.out.println("No results.");
             }
