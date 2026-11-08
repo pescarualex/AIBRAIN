@@ -47,8 +47,9 @@ final class Ingest {
 
         for (Path f : files) {
             String sid = f.getFileName().toString().replaceFirst("\\.jsonl$", "");
-            String sig = String.valueOf(Files.getLastModifiedTime(f).toMillis() / 1000L);
-            if (alreadyCurrent(c, sid, sig)) continue;
+            long mtimeMs = Files.getLastModifiedTime(f).toMillis();
+            String sig = mtimeMs + ":" + Files.size(f);
+            if (alreadyCurrent(c, sid, sig, mtimeMs)) continue;
 
             List<Msg> msgs = new ArrayList<>();
             String firstUser = null, started = null, ended = null;
@@ -93,21 +94,41 @@ final class Ingest {
         return new int[]{newS, newM};
     }
 
-    private static boolean alreadyCurrent(Connection c, String sid, String sig) throws SQLException {
+    /**
+     * Whether the stored signature matches the file. The signature is
+     * {@code "<mtime ms>:<size>"}: mtime alone (formerly whole seconds) misses a
+     * second write within the same second. A legacy seconds-only signature that
+     * still matches is upgraded in place instead of re-indexing the session, which
+     * would throw away its curated segments.
+     */
+    private static boolean alreadyCurrent(Connection c, String sid, String sig, long mtimeMs)
+            throws SQLException {
+        String stored;
         try (PreparedStatement ps = c.prepareStatement("SELECT src_sig FROM sessions WHERE id=?")) {
             ps.setString(1, sid);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && sig.equals(rs.getString(1));
+                if (!rs.next()) return false;
+                stored = rs.getString(1);
             }
         }
+        if (sig.equals(stored)) return true;
+        if (stored != null && stored.equals(String.valueOf(mtimeMs / 1000L))) {
+            try (PreparedStatement up = c.prepareStatement("UPDATE sessions SET src_sig=? WHERE id=?")) {
+                up.setString(1, sig);
+                up.setString(2, sid);
+                up.executeUpdate();
+            }
+            return true;
+        }
+        return false;
     }
 
     /** Replace a session and all its messages/segments (content changed -> re-index). */
     static void replaceSession(Connection c, String id, String source, String project,
                                String title, String started, String ended,
                                String srcPath, String sig, List<Msg> msgs) throws SQLException {
+        // messages_fts follows through the messages_ad trigger
         deleteBySession(c, "DELETE FROM messages WHERE session_id=?", id);
-        deleteBySession(c, "DELETE FROM messages_fts WHERE session_id=?", id);
         deleteBySession(c, "DELETE FROM segments WHERE session_id=?", id);
         deleteBySession(c, "DELETE FROM sessions WHERE id=?", id);
 
@@ -128,10 +149,9 @@ final class Ingest {
             ps.executeUpdate();
         }
 
+        // messages_fts is filled by the messages_ai trigger; rows go in as batches
         try (PreparedStatement pm = c.prepareStatement(
-                "INSERT INTO messages(session_id,seq,role,ts,text) VALUES(?,?,?,?,?)");
-             PreparedStatement pf = c.prepareStatement(
-                "INSERT INTO messages_fts(session_id,text) VALUES(?,?)")) {
+                "INSERT INTO messages(session_id,seq,role,ts,text) VALUES(?,?,?,?,?)")) {
             int seq = 0;
             for (Msg m : msgs) {
                 pm.setString(1, id);
@@ -139,14 +159,14 @@ final class Ingest {
                 pm.setString(3, m.role());
                 pm.setString(4, m.ts());
                 pm.setString(5, m.text());
-                pm.executeUpdate();
-
-                pf.setString(1, id);
-                pf.setString(2, m.text());
-                pf.executeUpdate();
+                pm.addBatch();
+                if (seq % BATCH == 0) pm.executeBatch();
             }
+            pm.executeBatch();
         }
     }
+
+    private static final int BATCH = 500;
 
     private static void deleteBySession(Connection c, String sql, String id) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(sql)) {

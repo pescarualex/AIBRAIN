@@ -29,7 +29,8 @@ topic summaries, so past context can be recalled across sessions.
 
 ```
 recall [N]          # last N topics (default 5), most recent first
-search <words>      # full-text search across the whole transcript (FTS5)
+search <words>      # full-text search across the whole transcript (FTS5); each hit shows
+                    # its session id and message seq, so you can jump to the exact spot
 stats               # how many sessions / messages / facts the database holds
 ingest              # incrementally index new/changed Claude Code sessions
 pending [N]         # sessions not yet segmented (recent first) — TSV

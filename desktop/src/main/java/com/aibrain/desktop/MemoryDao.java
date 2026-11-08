@@ -120,10 +120,12 @@ public final class MemoryDao {
         List<Hit> out = new ArrayList<>();
         String fts = ftsQuery(query);
         if (fts.isEmpty()) return out;   // nothing searchable (empty / only punctuation)
-        String sql = "SELECT f.session_id, s.ended_at, s.title, " +
-                     "snippet(messages_fts,1,'[',']','…',12) " +
-                     "FROM messages_fts f JOIN sessions s ON s.id=f.session_id " +
-                     "WHERE messages_fts MATCH ? ORDER BY s.ended_at DESC LIMIT ?";
+        // external-content FTS (see core Db): the hit's rowid is messages.id
+        String sql = "SELECT m.session_id, s.ended_at, s.title, " +
+                     "snippet(messages_fts,0,'[',']','…',12) " +
+                     "FROM messages_fts f JOIN messages m ON m.id=f.rowid " +
+                     "JOIN sessions s ON s.id=m.session_id " +
+                     "WHERE messages_fts MATCH ? ORDER BY s.ended_at DESC, m.seq DESC LIMIT ?";
         try (Connection c = open();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, fts);
